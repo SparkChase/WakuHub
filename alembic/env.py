@@ -32,6 +32,8 @@ if config.config_file_name is not None:
 # 导入 每个模块的orm 模型类 
 from src.core.base_model import Base
 import src.modules.user.model
+import src.modules.permission.model
+import src.modules.role.model
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

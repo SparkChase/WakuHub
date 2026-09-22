@@ -2,8 +2,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.database import get_db
 from src.core.base_schema import ResponseSchema
-from src.modules.user.schema import UserCreate, UserRead
+from src.modules.user.schema import (
+    UserAssignRoles,
+    UserCreate,
+    UserRead,
+    UserWithRolesRead,
+)
 from src.modules.user.service import UserService
+from src.modules.auth.deps import require_permission
+from src.core.permissions import PermCode
 
 router = APIRouter(prefix="/users", tags=["User"])
 
@@ -13,6 +20,7 @@ def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(db)
 
 
+# GET /users/{user_id}  查询单个用户
 @router.get("/{user_id}", response_model=ResponseSchema[UserRead])
 async def get_user(
     user_id: int,
@@ -22,6 +30,7 @@ async def get_user(
     return ResponseSchema[UserRead](data=UserRead.model_validate(user))
 
 
+# GET /users  分页列出用户
 @router.get("", response_model=ResponseSchema[list[UserRead]])
 async def list_users(
     offset: int = 0,
@@ -30,3 +39,18 @@ async def list_users(
 ):
     users = await svc.list_users(offset, limit)
     return ResponseSchema[list[UserRead]](data=[UserRead.model_validate(u) for u in users])
+
+
+# PUT /users/{user_id}/roles  全量覆盖用户的角色（传入的 id 列表即最终角色集，需 user:manage），返回带角色的用户
+@router.put(
+    "/{user_id}/roles",
+    response_model=ResponseSchema[UserWithRolesRead],
+    dependencies=[Depends(require_permission(PermCode.USER_MANAGE))],
+)
+async def assign_roles(
+    user_id: int,
+    data: UserAssignRoles,
+    svc: UserService = Depends(get_user_service),
+):
+    user = await svc.assign_roles(user_id, data.role_ids)
+    return ResponseSchema[UserWithRolesRead](data=UserWithRolesRead.model_validate(user))
