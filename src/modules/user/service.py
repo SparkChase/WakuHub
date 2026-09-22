@@ -3,6 +3,7 @@ from src.core.exceptions import BizException
 from src.modules.user.model import User
 from src.modules.user.schema import UserCreate
 from src.modules.user.repository import UserRepository
+from src.utils.password import PasswordHasher
 
 
 class UserService:
@@ -18,7 +19,7 @@ class UserService:
         user = User(
             username=data.username,
             email=data.email,
-            hashed_password=data.password,  # 项目开发时用 bcrypt 等加密
+            hashed_password=PasswordHasher.hash(data.password),
         )
         return await self.repo.create(user)
 

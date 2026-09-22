@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "DEBUG"
     LOG_DIR: str = "logs"
 
+    # JWT（JWT_SECRET_KEY 为敏感配置，生产必须放 .env 覆盖）
+    JWT_SECRET_KEY: str = "dev-secret-change-in-prod-please-use-32-bytes-min"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 默认 1 天
+
     @property
     def DATABASE_URL(self) -> str:
         return (

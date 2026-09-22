@@ -19,6 +19,9 @@ async def test_create_user_success(db_session):
     assert user.email == "alice@example.com"
     assert user.is_active is True
     assert user.created_at is not None
+    # 密码应被 bcrypt 哈希，不能明文存储
+    assert user.hashed_password != "secret"
+    assert user.hashed_password.startswith("$2")
 
 
 async def test_create_user_duplicate_username(db_session):
