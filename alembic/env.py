@@ -36,6 +36,7 @@ import src.modules.permission.model
 import src.modules.role.model
 import src.modules.provider.model
 import src.modules.model.model
+import src.modules.prompt.model
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
