@@ -11,8 +11,8 @@ engine = create_async_engine(
     max_overflow=20, # 超过连接池大小后，最多可以创建的连接数
     pool_timeout=30, # 连接池获取连接的超时时间，单位秒
     pool_recycle=60 * 5, # 连接池连接的最大空闲时间，单位秒
-    pool_pre_ping=True, # 连接池在获取连接时，会先测试连接是否可用
-
+    # 注意：aiomysql 0.3.2 改了 ping() 签名，与 SQLAlchemy 2.0 的 pool_pre_ping 不兼容
+    # （TypeError: ping() missing 'reconnect'）。靠 pool_recycle 回收空闲连接即可，不开 pre_ping。
 )
 
 
