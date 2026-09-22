@@ -13,6 +13,7 @@ from src.modules.auth.api import router as auth_router
 from src.modules.permission.api import router as permission_router
 from src.modules.role.api import router as role_router
 from src.modules.provider.api import router as provider_router
+from src.modules.model.api import router as model_router
 
 # 使用上下文管理器感知项目的生命周期
 from contextlib import asynccontextmanager
@@ -67,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(permission_router, prefix="/api")
     app.include_router(role_router, prefix="/api")
     app.include_router(provider_router, prefix="/api")
+    app.include_router(model_router, prefix="/api")
 
     return app
 
