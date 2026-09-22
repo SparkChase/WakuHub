@@ -1,1 +1,10 @@
 Generic single-database configuration with an async dbapi.
+
+生成首次迁移：
+alembic revision --autogenerate -m "init"
+
+执行迁移
+alembic upgrade head 
+
+
+alembic revision --autogenerate -m "新建users表"

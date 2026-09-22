@@ -93,3 +93,18 @@ docker compose -f docker-compose.yaml up -d
 fastapi dev src/main.py
 
 alembic init -t async alembic 
+
+后续流程：
+每次修改Model
+# 1.生成前一文件
+alembic revision --autogenerate -m "描述本次变更"
+
+# 2.检查生活的迁移文件（在alembic/versions/ 下）
+
+# 3.迁移文件
+alembic upgrade 
+
+# 其他常用命令
+alembic downgrade -1 
+alembic current
+alembic history
