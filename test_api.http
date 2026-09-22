@@ -3,7 +3,7 @@
 ### 先启动服务：./scripts/dev.sh   （默认 8000 端口）
 
 @host = http://localhost:8000
-@api = {{host}}/api/v1
+@api = {{host}}/api
 
 
 ### 0. 健康检查

@@ -8,6 +8,7 @@ dependencies = [
     "aiomysql>=0.3.2",
     "bcrypt>=5.0.0",
     "captcha>=0.7.1",
+    "minio>=7.2.0",
     "pyjwt>=2.14.0",
     "redis>=8.1.0",
 ]
@@ -19,3 +20,8 @@ dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
 ]
+
+[tool.pytest.ini_options]
+# 全异步测试：async def 测试函数自动识别，无需逐个加 @pytest.mark.asyncio
+asyncio_mode = "auto"
+testpaths = ["tests"]

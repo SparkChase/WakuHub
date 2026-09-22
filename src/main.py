@@ -1,10 +1,12 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from src.core.config import get_settings
 from src.middlewares.logging import LoggingMiddleware
 from src.core.exceptions import register_exception_handlers
 from src.core.logger import setup_logger
 from src.infra.database import engine
+from src.infra.minio_client import ensure_bucket_exists
 from src.modules.user.api import router as user_router
 from src.modules.captcha.api import router as captcha_router
 from src.modules.auth.api import router as auth_router
@@ -20,7 +22,11 @@ async def lifespan(app: FastAPI):
     setup_logger()  # 配置日志组建
     settings = get_settings()
     logger.info(f"{settings.APP_NAME} 启动.. | 使用环境： {settings.APP_ENV}")
-    # 应用启动时执行
+    # 启动时确保 MinIO 业务桶存在；MinIO 不可用不应阻断应用启动，仅告警
+    try:
+        ensure_bucket_exists()
+    except Exception as e:
+        logger.error(f"MinIO 桶初始化失败，文件上传功能将不可用：{e}")
     yield
     # 应用关闭时执行
     # 关闭数据库连接池
@@ -41,16 +47,24 @@ def create_app() -> FastAPI:
 
     # 注册中间件
     app.add_middleware(LoggingMiddleware)
+    # 跨域：允许前端开发服务器（Vite 5173 / 备用 3000）携带凭证访问
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173", "http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # 注册异常处理器
     register_exception_handlers(app)
 
-    # 注册路由
-    app.include_router(user_router,prefix="/api/v1")
-    app.include_router(captcha_router,prefix="/api/v1")
-    app.include_router(auth_router,prefix="/api/v1")
-    app.include_router(permission_router,prefix="/api/v1")
-    app.include_router(role_router,prefix="/api/v1")
+    # 注册路由：统一 /api 前缀，与前端默认 baseURL 对齐
+    app.include_router(user_router, prefix="/api")
+    app.include_router(captcha_router, prefix="/api")
+    app.include_router(auth_router, prefix="/api")
+    app.include_router(permission_router, prefix="/api")
+    app.include_router(role_router, prefix="/api")
 
     return app
 

@@ -220,8 +220,10 @@ __marimo__/
 docker
 
 # Project specific
+PLAN.md
 logs/
 .DS_Store
 .idea/
 .vscode/
 
+app

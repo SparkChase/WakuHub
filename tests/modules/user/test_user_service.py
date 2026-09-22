@@ -65,8 +65,9 @@ async def test_list_users(db_session):
     for i in range(3):
         await svc.create_user(_make(username=f"u{i}", email=f"u{i}@example.com"))
 
-    users = await svc.list_users(offset=0, limit=100)
+    users, total = await svc.list_users(offset=0, limit=100)
     assert len(users) == 3
+    assert total == 3
 
 
 async def test_repository_get_by_username(db_session):

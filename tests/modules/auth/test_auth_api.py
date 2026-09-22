@@ -6,7 +6,7 @@ settings = get_settings()
 
 async def _get_captcha(client, redis_client):
     """生成一个验证码，返回 (key, code)，供登录测试携带。"""
-    resp = await client.get("/api/v1/captcha")
+    resp = await client.get("/api/captcha")
     key = resp.json()["data"]["key"]
     code = await redis_client.get(f"{settings.CAPTCHA_KEY_PREFIX}{key}")
     return key, code
@@ -14,7 +14,7 @@ async def _get_captcha(client, redis_client):
 
 async def _register(client, username: str):
     return await client.post(
-        "/api/v1/auth/register",
+        "/api/auth/register",
         json={"username": username, "email": f"{username}@example.com", "password": "secret"},
     )
 
@@ -38,7 +38,7 @@ async def test_register_duplicate(client):
 
 async def test_register_invalid_email(client):
     resp = await client.post(
-        "/api/v1/auth/register",
+        "/api/auth/register",
         json={"username": "bad", "email": "not-an-email", "password": "secret"},
     )
     # pydantic 校验失败 -> FastAPI 返回 422
@@ -51,7 +51,7 @@ async def test_login_and_access_me(client, redis_client):
     # 登录拿 token（带验证码）
     key, code = await _get_captcha(client, redis_client)
     login = await client.post(
-        "/api/v1/auth/login",
+        "/api/auth/login",
         json={"username": "login_api", "password": "secret",
               "captcha_key": key, "captcha_code": code},
     )
@@ -61,7 +61,7 @@ async def test_login_and_access_me(client, redis_client):
 
     # 带 token 访问受保护接口 /me
     me = await client.get(
-        "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
+        "/api/auth/me", headers={"Authorization": f"Bearer {token}"}
     )
     assert me.status_code == 200
     assert me.json()["data"]["username"] == "login_api"
@@ -72,7 +72,7 @@ async def test_login_wrong_password(client, redis_client):
 
     key, code = await _get_captcha(client, redis_client)
     resp = await client.post(
-        "/api/v1/auth/login",
+        "/api/auth/login",
         json={"username": "wrongpw", "password": "bad",
               "captcha_key": key, "captcha_code": code},
     )
@@ -85,7 +85,7 @@ async def test_login_wrong_captcha(client, redis_client):
 
     key, _ = await _get_captcha(client, redis_client)
     resp = await client.post(
-        "/api/v1/auth/login",
+        "/api/auth/login",
         json={"username": "capfail", "password": "secret",
               "captcha_key": key, "captcha_code": "0000"},
     )
@@ -96,13 +96,13 @@ async def test_login_wrong_captcha(client, redis_client):
 
 async def test_me_without_token(client):
     # 无 Authorization 头，OAuth2PasswordBearer 直接返回 401
-    resp = await client.get("/api/v1/auth/me")
+    resp = await client.get("/api/auth/me")
     assert resp.status_code == 401
 
 
 async def test_me_with_invalid_token(client):
     resp = await client.get(
-        "/api/v1/auth/me", headers={"Authorization": "Bearer garbage.token.here"}
+        "/api/auth/me", headers={"Authorization": "Bearer garbage.token.here"}
     )
     # JWTHelper 抛 BizException(401)，由业务异常处理器返回 HTTP 200 + code 401
     assert resp.json()["code"] == 401

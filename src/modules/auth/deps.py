@@ -19,7 +19,7 @@ from src.modules.user.service import UserService
 from src.utils.jwt import JWTHelper
 
 # 从 Authorization: Bearer <token> 头取 token；tokenUrl 指向登录接口，供 Swagger 授权用
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
