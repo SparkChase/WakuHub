@@ -37,9 +37,17 @@ class UserService:
             raise BizException(code=404, message="用户不存在")
         return user
 
-    # 分页列出用户
-    async def list_users(self, offset: int = 0, limit: int = 100):
-        return await self.repo.get_all(offset=offset, limit=limit)
+    # 分页 + 模糊搜索列出用户，返回 (数据列表, 总条数)
+    async def list_users(
+        self, offset: int, limit: int, keyword: str | None = None
+    ) -> tuple[list[User], int]:
+        # 按 username / email 模糊匹配 keyword
+        return await self.repo.get_page(
+            offset=offset,
+            limit=limit,
+            keyword=keyword,
+            search_fields=["username", "email"],
+        )
 
     # 给用户分配角色（全量覆盖：传入的 id 列表即为用户最终的角色集合）
     async def assign_roles(self, user_id: int, role_ids: list[int]) -> User:

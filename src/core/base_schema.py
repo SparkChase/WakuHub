@@ -16,3 +16,10 @@ class PageResult(BaseModel, Generic[T]):
     page: int = 1
     page_size: int = 20
 
+    # 由 repo.get_page 返回的 (items, total) + 分页参数组装分页结果
+    @classmethod
+    def build(
+        cls, items: list[T], total: int, page: int, page_size: int
+    ) -> "PageResult[T]":
+        return cls(items=items, total=total, page=page, page_size=page_size)
+

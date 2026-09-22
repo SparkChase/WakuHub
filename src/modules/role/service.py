@@ -54,9 +54,17 @@ class RoleService:
         # 2. 删除；role_permissions / user_roles 关联行由外键 CASCADE 自动清理
         await self.repo.delete(role)
 
-    # 分页列出角色
-    async def list_roles(self, offset: int = 0, limit: int = 100):
-        return await self.repo.get_all(offset=offset, limit=limit)
+    # 分页 + 模糊搜索列出角色，返回 (数据列表, 总条数)
+    async def list_roles(
+        self, offset: int, limit: int, keyword: str | None = None
+    ) -> tuple[list[Role], int]:
+        # 按 code / name 模糊匹配 keyword
+        return await self.repo.get_page(
+            offset=offset,
+            limit=limit,
+            keyword=keyword,
+            search_fields=["code", "name"],
+        )
 
     # 给角色分配权限（全量覆盖：传入的 id 列表即为角色最终的权限集合）
     async def assign_permissions(self, role_id: int, permission_ids: list[int]) -> Role:

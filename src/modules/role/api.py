@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infra.database import get_db
-from src.core.base_schema import ResponseSchema
+from src.core.base_schema import ResponseSchema, PageResult
+from src.core.depys import PageParams
 from src.modules.role.schema import (
     RoleAssignPermissions,
     RoleCreate,
@@ -46,17 +47,21 @@ async def get_role(
     return ResponseSchema[RoleRead](data=RoleRead.model_validate(role))
 
 
-# GET /roles  分页列出角色
-@router.get("", response_model=ResponseSchema[list[RoleRead]])
+# GET /roles  分页 + 模糊搜索列出角色
+@router.get("", response_model=ResponseSchema[PageResult[RoleRead]])
 async def list_roles(
-    offset: int = 0,
-    limit: int = 100,
+    page: PageParams = Depends(),
     svc: RoleService = Depends(get_role_service),
 ):
-    roles = await svc.list_roles(offset, limit)
-    return ResponseSchema[list[RoleRead]](
-        data=[RoleRead.model_validate(r) for r in roles]
+    # svc 返回 (数据列表, 总条数)，用分页参数组装成 PageResult
+    roles, total = await svc.list_roles(page.offset, page.limit, page.keyword)
+    result = PageResult[RoleRead].build(
+        items=[RoleRead.model_validate(r) for r in roles],
+        total=total,
+        page=page.page,
+        page_size=page.page_size,
     )
+    return ResponseSchema[PageResult[RoleRead]](data=result)
 
 
 # PUT /roles/{role_id}  更新角色（code 不可改，需 role:manage）

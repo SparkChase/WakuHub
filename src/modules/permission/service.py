@@ -51,6 +51,14 @@ class PermissionService:
         # 2. 删除；role_permissions 关联行由外键 ondelete=CASCADE 自动清理
         await self.repo.delete(perm)
 
-    # 分页列出权限
-    async def list_permissions(self, offset: int = 0, limit: int = 100):
-        return await self.repo.get_all(offset=offset, limit=limit)
+    # 分页 + 模糊搜索列出权限，返回 (数据列表, 总条数)
+    async def list_permissions(
+        self, offset: int, limit: int, keyword: str | None = None
+    ) -> tuple[list[Permission], int]:
+        # 按 code / name 模糊匹配 keyword
+        return await self.repo.get_page(
+            offset=offset,
+            limit=limit,
+            keyword=keyword,
+            search_fields=["code", "name"],
+        )

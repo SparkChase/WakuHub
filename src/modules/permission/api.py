@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infra.database import get_db
-from src.core.base_schema import ResponseSchema
+from src.core.base_schema import ResponseSchema, PageResult
+from src.core.depys import PageParams
 from src.modules.permission.schema import (
     PermissionCreate,
     PermissionRead,
@@ -44,17 +45,21 @@ async def get_permission(
     return ResponseSchema[PermissionRead](data=PermissionRead.model_validate(perm))
 
 
-# GET /permissions  分页列出权限
-@router.get("", response_model=ResponseSchema[list[PermissionRead]])
+# GET /permissions  分页 + 模糊搜索列出权限
+@router.get("", response_model=ResponseSchema[PageResult[PermissionRead]])
 async def list_permissions(
-    offset: int = 0,
-    limit: int = 100,
+    page: PageParams = Depends(),
     svc: PermissionService = Depends(get_permission_service),
 ):
-    perms = await svc.list_permissions(offset, limit)
-    return ResponseSchema[list[PermissionRead]](
-        data=[PermissionRead.model_validate(p) for p in perms]
+    # svc 返回 (数据列表, 总条数)，用分页参数组装成 PageResult
+    perms, total = await svc.list_permissions(page.offset, page.limit, page.keyword)
+    result = PageResult[PermissionRead].build(
+        items=[PermissionRead.model_validate(p) for p in perms],
+        total=total,
+        page=page.page,
+        page_size=page.page_size,
     )
+    return ResponseSchema[PageResult[PermissionRead]](data=result)
 
 
 # PUT /permissions/{perm_id}  更新权限（code 不可改，需 permission:manage）

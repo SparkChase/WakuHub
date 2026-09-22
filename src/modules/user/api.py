@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infra.database import get_db
-from src.core.base_schema import ResponseSchema
+from src.core.base_schema import ResponseSchema, PageResult
+from src.core.depys import PageParams
 from src.modules.user.schema import (
     UserAssignRoles,
     UserCreate,
@@ -31,15 +32,21 @@ async def get_user(
     return ResponseSchema[UserRead](data=UserRead.model_validate(user))
 
 
-# GET /users  分页列出用户
-@router.get("", response_model=ResponseSchema[list[UserRead]])
+# GET /users  分页 + 模糊搜索列出用户
+@router.get("", response_model=ResponseSchema[PageResult[UserRead]])
 async def list_users(
-    offset: int = 0,
-    limit: int = 100,
+    page: PageParams = Depends(),
     svc: UserService = Depends(get_user_service),
 ):
-    users = await svc.list_users(offset, limit)
-    return ResponseSchema[list[UserRead]](data=[UserRead.model_validate(u) for u in users])
+    # svc 返回 (数据列表, 总条数)，用分页参数组装成 PageResult
+    users, total = await svc.list_users(page.offset, page.limit, page.keyword)
+    result = PageResult[UserRead].build(
+        items=[UserRead.model_validate(u) for u in users],
+        total=total,
+        page=page.page,
+        page_size=page.page_size,
+    )
+    return ResponseSchema[PageResult[UserRead]](data=result)
 
 
 # PUT /users/{user_id}/roles  全量覆盖用户的角色（传入的 id 列表即最终角色集，需 user:manage），返回带角色的用户
