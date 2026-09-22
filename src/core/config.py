@@ -8,10 +8,10 @@ class Settings(BaseSettings):
     APP_DEBUG: bool = True
 
     DB_HOST: str = "localhost"
-    DB_PORT: int = 5432
-    DB_USER: str = "medical"
-    DB_PASSWORD: str = "medical123"
-    DB_NAME: str = "medical_db"
+    DB_PORT: int = 3306
+    DB_USER: str = "root"
+    DB_PASSWORD: str = ""
+    DB_NAME: str = "waku"
 
     # Redis
     REDIS_HOST: str = "localhost"
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL(self) -> str:
         return (
-            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
