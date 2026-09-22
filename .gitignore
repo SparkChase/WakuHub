@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+docker
+
+# Project specific
+logs/
+.DS_Store
+.idea/
+.vscode/
+
