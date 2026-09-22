@@ -13,17 +13,6 @@ def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(db)
 
 
-# POST /users  注册
-@router.post("", response_model=ResponseSchema[UserRead])
-async def create_user(
-    data: UserCreate,
-    svc: UserService = Depends(get_user_service),
-):
-    # 由于返回的是 ORM 模型对象
-    user = await svc.create_user(data)
-    return ResponseSchema[UserRead](data=UserRead.model_validate(user))
-
-
 @router.get("/{user_id}", response_model=ResponseSchema[UserRead])
 async def get_user(
     user_id: int,

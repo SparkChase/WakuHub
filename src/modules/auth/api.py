@@ -6,7 +6,7 @@ from src.infra.database import get_db
 from src.core.base_schema import ResponseSchema
 from src.modules.auth.schema import LoginRequest, TokenResponse
 from src.modules.auth.service import AuthService
-from src.modules.user.schema import UserRead
+from src.modules.user.schema import UserCreate, UserRead
 from src.modules.user.service import UserService
 from src.modules.captcha.api import get_captcha_service
 from src.modules.captcha.service import CaptchaService
@@ -34,6 +34,16 @@ async def get_current_user(
     payload = JWTHelper.decode_token(token)
     user = await svc.get_user(int(payload["sub"]))
     return UserRead.model_validate(user)
+
+
+# POST /auth/register  注册
+@router.post("/register", response_model=ResponseSchema[UserRead])
+async def register(
+    data: UserCreate,
+    svc: UserService = Depends(get_user_service),
+):
+    user = await svc.create_user(data)
+    return ResponseSchema[UserRead](data=UserRead.model_validate(user))
 
 
 # POST /auth/login  登录：先校验验证码，再校验密码，返回 JWT

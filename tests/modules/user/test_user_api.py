@@ -1,45 +1,15 @@
-"""User API 集成测试（走 HTTP，经过路由 -> service -> repository 全链路）。"""
+"""User API 集成测试（查询类，走 HTTP 全链路）。注册在 auth 模块，见 tests/modules/auth。"""
 
 
-async def test_create_user_api(client):
-    resp = await client.post(
-        "/api/v1/users",
-        json={"username": "api_user", "email": "api@example.com", "password": "secret"},
+async def _register(client, username: str, email: str):
+    return await client.post(
+        "/api/v1/auth/register",
+        json={"username": username, "email": email, "password": "secret"},
     )
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["code"] == 200
-    assert body["data"]["username"] == "api_user"
-    assert body["data"]["email"] == "api@example.com"
-    assert body["data"]["is_active"] is True
-    assert body["data"]["id"] > 0
-
-
-async def test_create_user_api_duplicate(client):
-    payload = {"username": "dup_api", "email": "dup_api@example.com", "password": "secret"}
-    first = await client.post("/api/v1/users", json=payload)
-    assert first.status_code == 200
-
-    second = await client.post("/api/v1/users", json=payload)
-    # BizException 由全局处理器捕获，HTTP 200 + 业务码 400
-    assert second.status_code == 200
-    assert second.json()["code"] == 400
-
-
-async def test_create_user_api_invalid_email(client):
-    resp = await client.post(
-        "/api/v1/users",
-        json={"username": "bad", "email": "not-an-email", "password": "secret"},
-    )
-    # pydantic 校验失败 -> FastAPI 返回 422
-    assert resp.status_code == 422
 
 
 async def test_get_user_api(client):
-    created = await client.post(
-        "/api/v1/users",
-        json={"username": "get_api", "email": "get_api@example.com", "password": "secret"},
-    )
+    created = await _register(client, "get_api", "get_api@example.com")
     user_id = created.json()["data"]["id"]
 
     resp = await client.get(f"/api/v1/users/{user_id}")
@@ -55,10 +25,7 @@ async def test_get_user_api_not_found(client):
 
 async def test_list_users_api(client):
     for i in range(2):
-        await client.post(
-            "/api/v1/users",
-            json={"username": f"list{i}", "email": f"list{i}@example.com", "password": "secret"},
-        )
+        await _register(client, f"list{i}", f"list{i}@example.com")
 
     resp = await client.get("/api/v1/users")
     assert resp.status_code == 200

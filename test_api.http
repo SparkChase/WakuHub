@@ -1,0 +1,125 @@
+### WakuHub API 手动测试（VS Code REST Client 插件）
+### 用法：装 "REST Client" 插件，点每个请求上方的 "Send Request"
+### 先启动服务：./scripts/dev.sh   （默认 8000 端口）
+
+@host = http://localhost:8000
+@api = {{host}}/api/v1
+
+
+### 0. 健康检查
+GET {{host}}/health
+
+
+### ============ 注册（auth 模块） ============
+
+### 1. 注册用户
+# @name register
+POST {{api}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "tester",
+  "email": "tester@example.com",
+  "password": "secret123"
+}
+
+### 4. 重复注册（预期 code=400，用户名已存在）
+POST {{api}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "tester",
+  "email": "other@example.com",
+  "password": "secret123"
+}
+
+### 5. 非法邮箱（预期 HTTP 422）
+POST {{api}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "bad",
+  "email": "not-an-email",
+  "password": "secret123"
+}
+
+
+### ============ User 查询 ============
+
+### 2. 查询用户列表
+GET {{api}}/users?offset=0&limit=100
+
+### 3. 按 id 查询（改成上面注册返回的 id）
+GET {{api}}/users/1
+
+
+### ============ Captcha 验证码 ============
+
+### 6. 生成验证码
+# @name captcha
+# 返回 data.key 和 data.img（base64 图片）
+# 验证码是图片，眼睛看不到 code，测登录有两种办法：
+#   办法A（看图）：复制响应里 data.img 的完整值（data:image/png;base64,...），
+#                 粘贴到浏览器地址栏回车，就能看到图上的 4 位验证码
+#   办法B（查库，最快）：在终端跑
+#                 redis-cli get "captcha:<上面返回的 key>"
+#                 直接拿到明文 code（存的是小写）
+GET {{api}}/captcha
+
+### 7. 单独校验验证码（把 key 换成第 6 步返回的，code 换成你看到/查到的）
+POST {{api}}/captcha/verify
+Content-Type: application/json
+
+{
+  "key": "7474b8c713c144d7ba501c2b581cd550",
+  "code": "NWy7"
+}
+
+
+### ============ Auth 登录 / 鉴权 ============
+
+### 8. 登录（需要先做第 6 步拿 key，再看图/查库拿 code）
+# @name login
+# 手动把 captcha_key 和 captcha_code 换成真实值
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "tester",
+  "password": "secret123",
+  "captcha_key": "6bf88af3c6eb403eba5077a51de7ffd5",
+  "captcha_code": "wzza"
+}
+
+### 9. 访问受保护接口 /me（自动带上第 8 步登录返回的 token）
+GET {{api}}/auth/me
+Authorization: Bearer {{login.response.body.data.access_token}}
+
+### 10. 不带 token 访问 /me（预期 HTTP 401）
+GET {{api}}/auth/me
+
+### 11. 带无效 token 访问 /me（预期 code=401）
+GET {{api}}/auth/me
+Authorization: Bearer garbage.token.here
+
+### 12. 验证码错误的登录（预期 code=400；注意验证码一次性，需重新做第 6 步拿新 key）
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "tester",
+  "password": "secret123",
+  "captcha_key": "重新做第6步拿新key",
+  "captcha_code": "0000"
+}
+
+### 13. 密码错误的登录（预期 code=400；同样需要新的验证码）
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "tester",
+  "password": "wrong-password",
+  "captcha_key": "重新做第6步拿新key",
+  "captcha_code": "把验证码粘这里"
+}

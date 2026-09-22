@@ -13,10 +13,36 @@ async def _get_captcha(client, redis_client):
 
 
 async def _register(client, username: str):
-    await client.post(
-        "/api/v1/users",
+    return await client.post(
+        "/api/v1/auth/register",
         json={"username": username, "email": f"{username}@example.com", "password": "secret"},
     )
+
+
+async def test_register(client):
+    resp = await _register(client, "reg_user")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["code"] == 200
+    assert body["data"]["username"] == "reg_user"
+    assert body["data"]["id"] > 0
+
+
+async def test_register_duplicate(client):
+    await _register(client, "dup_user")
+    resp = await _register(client, "dup_user")
+    # BizException 由全局处理器捕获，HTTP 200 + 业务码 400
+    assert resp.status_code == 200
+    assert resp.json()["code"] == 400
+
+
+async def test_register_invalid_email(client):
+    resp = await client.post(
+        "/api/v1/auth/register",
+        json={"username": "bad", "email": "not-an-email", "password": "secret"},
+    )
+    # pydantic 校验失败 -> FastAPI 返回 422
+    assert resp.status_code == 422
 
 
 async def test_login_and_access_me(client, redis_client):
