@@ -9,7 +9,8 @@ from src.modules.user.schema import (
     UserWithRolesRead,
 )
 from src.modules.user.service import UserService
-from src.modules.auth.deps import require_permission
+from src.modules.auth.deps import require_permission, get_permission_cache
+from src.modules.auth.cache import PermissionCache
 from src.core.permissions import PermCode
 
 router = APIRouter(prefix="/users", tags=["User"])
@@ -51,6 +52,9 @@ async def assign_roles(
     user_id: int,
     data: UserAssignRoles,
     svc: UserService = Depends(get_user_service),
+    cache: PermissionCache = Depends(get_permission_cache),
 ):
     user = await svc.assign_roles(user_id, data.role_ids)
+    # 角色变了 → 失效该用户的权限缓存，下次请求回源重建
+    await cache.invalidate(user_id)
     return ResponseSchema[UserWithRolesRead](data=UserWithRolesRead.model_validate(user))

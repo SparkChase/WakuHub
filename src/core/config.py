@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     CAPTCHA_TTL: int = 120           # 有效期（秒）
     CAPTCHA_KEY_PREFIX: str = "captcha:"  # Redis key 前缀
 
+    # RBAC 权限缓存
+    RBAC_CACHE_TTL: int = 60 * 10          # 用户权限缓存有效期（秒），10 分钟兜底
+    RBAC_CACHE_PREFIX: str = "rbac:perms:"  # Redis key 前缀，完整 key 形如 rbac:perms:{user_id}
+
     # MinIO
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"

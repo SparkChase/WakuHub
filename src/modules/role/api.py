@@ -10,7 +10,8 @@ from src.modules.role.schema import (
     RoleUpdate,
 )
 from src.modules.role.service import RoleService
-from src.modules.auth.deps import require_permission
+from src.modules.auth.deps import require_permission, get_permission_cache
+from src.modules.auth.cache import PermissionCache
 from src.core.permissions import PermCode
 
 router = APIRouter(prefix="/roles", tags=["Role"])
@@ -82,8 +83,11 @@ async def update_role(
 async def delete_role(
     role_id: int,
     svc: RoleService = Depends(get_role_service),
+    cache: PermissionCache = Depends(get_permission_cache),
 ):
     await svc.delete_role(role_id)
+    # 角色被删 → 持有它的用户权限变了，且难以枚举，直接清空 rbac 缓存靠回源重建
+    await cache.invalidate_all()
     return ResponseSchema[bool](data=True)
 
 
@@ -97,6 +101,9 @@ async def assign_permissions(
     role_id: int,
     data: RoleAssignPermissions,
     svc: RoleService = Depends(get_role_service),
+    cache: PermissionCache = Depends(get_permission_cache),
 ):
     role = await svc.assign_permissions(role_id, data.permission_ids)
+    # 角色权限变了 → 持有该角色的用户权限全变，难以枚举，直接清空 rbac 缓存靠回源重建
+    await cache.invalidate_all()
     return ResponseSchema[RoleRead](data=RoleRead.model_validate(role))
