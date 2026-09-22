@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str = ""
     REDIS_DB: int = 0
 
+    # 验证码
+    CAPTCHA_LENGTH: int = 4          # 验证码位数
+    CAPTCHA_TTL: int = 120           # 有效期（秒）
+    CAPTCHA_KEY_PREFIX: str = "captcha:"  # Redis key 前缀
+
     # MinIO
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"

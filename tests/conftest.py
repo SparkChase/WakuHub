@@ -8,9 +8,12 @@ import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
+from redis.asyncio import Redis
+
 from src.core.config import get_settings
 from src.core.base_model import Base
 from src.infra.database import get_db
+from src.infra.redis import get_redis_client
 from src.main import create_app
 
 # 导入所有 ORM 模型，保证 Base.metadata 里注册了对应的表
@@ -65,14 +68,33 @@ async def db_session(engine):
 
 
 @pytest_asyncio.fixture(loop_scope="session")
-async def client(db_session):
-    """HTTP 测试客户端：用 ASGI 直连应用，并把 get_db 依赖替换成测试事务会话。"""
+async def redis_client():
+    """函数级 redis：用独立的 db 15 隔离测试数据，每个测试前后 flushdb。"""
+    test_db = 15
+    url = (
+        f"redis://{':' + _settings.REDIS_PASSWORD + '@' if _settings.REDIS_PASSWORD else ''}"
+        f"{_settings.REDIS_HOST}:{_settings.REDIS_PORT}/{test_db}"
+    )
+    client = Redis.from_url(url, decode_responses=True)
+    await client.flushdb()
+    yield client
+    await client.flushdb()
+    await client.aclose()
+
+
+@pytest_asyncio.fixture(loop_scope="session")
+async def client(db_session, redis_client):
+    """HTTP 测试客户端：用 ASGI 直连应用，把 get_db / get_redis 依赖替换成测试实例。"""
     app = create_app()
 
     async def _override_get_db():
         yield db_session
 
+    async def _override_get_redis():
+        return redis_client
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_redis_client] = _override_get_redis
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
