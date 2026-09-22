@@ -5,6 +5,7 @@ from src.middlewares.logging import LoggingMiddleware
 from src.core.exceptions import register_exception_handlers
 from src.core.logger import setup_logger
 from src.infra.database import engine
+from src.modules.user.api import router as user_router
 
 # 使用上下文管理器感知项目的生命周期
 from contextlib import asynccontextmanager
@@ -41,7 +42,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     # 注册路由
-    # app.include_router()
+    app.include_router(user_router,prefix="/api/v1")
 
     return app
 
