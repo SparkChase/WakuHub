@@ -15,6 +15,7 @@ from src.modules.role.api import router as role_router
 from src.modules.provider.api import router as provider_router
 from src.modules.model.api import router as model_router
 from src.modules.prompt.api import router as prompt_router
+from src.modules.knowledge.api import router as knowledge_router
 
 # 使用上下文管理器感知项目的生命周期
 from contextlib import asynccontextmanager
@@ -50,10 +51,14 @@ def create_app() -> FastAPI:
 
     # 注册中间件
     app.add_middleware(LoggingMiddleware)
-    # 跨域：允许前端开发服务器（Vite 5173 / 备用 3000）携带凭证访问
+    # 跨域：允许前端开发服务器（Vite 5173，端口被占时 Vite 顺延 5174 / 备用 3000）携带凭证访问
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://localhost:3000"],
+        allow_origins=[
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:3000",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -71,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(provider_router, prefix="/api")
     app.include_router(model_router, prefix="/api")
     app.include_router(prompt_router, prefix="/api")
+    app.include_router(knowledge_router, prefix="/api")
 
     return app
 
