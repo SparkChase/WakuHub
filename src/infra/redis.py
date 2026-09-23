@@ -42,12 +42,13 @@ _checkpointer_pool = redis.ConnectionPool(
     decode_responses=False,  # RedisSaver 要求 bytes，不能 decode
 )
 
-# # 短期记忆专用
-# _checkpointer_client = redis.Redis(connection_pool=_checkpointer_pool)
+# 短期记忆（LangGraph checkpointer）专用客户端：复用 bytes 模式连接池
+_checkpointer_client = redis.Redis(connection_pool=_checkpointer_pool)
 
-# def get_checkpointer_redis() -> redis.Redis:
-#     """
-#     返回供 RedisSaver（LangGraph checkpointer）专用的 Redis 客户端。
-#     decode_responses=False，以 bytes 模式运行，与业务 Redis 客户端隔离。
-#     """
-#     return _checkpointer_client
+
+def get_checkpointer_redis() -> redis.Redis:
+    """
+    返回供 AsyncRedisSaver（LangGraph checkpointer）专用的 Redis 客户端。
+    decode_responses=False，以 bytes 模式运行，与业务 Redis 客户端隔离。
+    """
+    return _checkpointer_client
