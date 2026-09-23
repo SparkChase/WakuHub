@@ -5,8 +5,11 @@ from src.core.config import get_settings
 from src.middlewares.logging import LoggingMiddleware
 from src.core.exceptions import register_exception_handlers
 from src.core.logger import setup_logger
-from src.infra.database import engine
+from src.infra.database import engine, check_db_health
+from src.infra.redis import check_redis_health
 from src.infra.minio_client import ensure_bucket_exists
+from src.infra.milvus_client import check_milvus_health, close_milvus_client
+from src.infra.neo4j_client import check_neo4j_health, close_neo4j_driver
 from src.modules.user.api import router as user_router
 from src.modules.captcha.api import router as captcha_router
 from src.modules.auth.api import router as auth_router
@@ -20,7 +23,40 @@ from src.modules.tool.api import router as tool_router
 from src.modules.agent.api import router as agent_router
 
 # 使用上下文管理器感知项目的生命周期
+import inspect
 from contextlib import asynccontextmanager
+
+
+async def _probe(name: str, check) -> tuple[str, bool]:
+    """执行单个组件的探测函数（兼容同步 / 异步），把结果收敛成 (名称, 是否可用)。
+    这里刻意 try 住异常：健康检查的职责就是逐个上报状态，失败要 error 打印出来而不是中断，
+    从而让下面能汇总出完整的一张健康表；这不是业务层的静默吞错。
+    """
+    try:
+        result = check()
+        if inspect.isawaitable(result):
+            await result
+        return (name, True)
+    except Exception as e:
+        logger.error(f"{name} 健康检查失败：{e}")
+        return (name, False)
+
+
+async def check_infra_health() -> None:
+    """启动时逐个探测各基础组件连通性并打印健康汇总；单个组件不可用不阻断启动，仅告警。"""
+    # MinIO 复用 ensure_bucket_exists：既验证连通性又顺带建业务桶
+    checks = [
+        ("MySQL", check_db_health),
+        ("Redis", check_redis_health),
+        ("MinIO", ensure_bucket_exists),
+        ("Milvus", check_milvus_health),
+        ("Neo4j", check_neo4j_health),
+    ]
+    results = [await _probe(name, check) for name, check in checks]
+
+    healthy = sum(1 for _, ok in results if ok)
+    lines = [f"  {'✓' if ok else '✗'} {name}" for name, ok in results]
+    logger.info(f"基础组件健康检查（{healthy}/{len(results)} 可用）:\n" + "\n".join(lines))
 
 
 @asynccontextmanager
@@ -28,15 +64,13 @@ async def lifespan(app: FastAPI):
     setup_logger()  # 配置日志组建
     settings = get_settings()
     logger.info(f"{settings.APP_NAME} 启动.. | 使用环境： {settings.APP_ENV}")
-    # 启动时确保 MinIO 业务桶存在；MinIO 不可用不应阻断应用启动，仅告警
-    try:
-        ensure_bucket_exists()
-    except Exception as e:
-        logger.error(f"MinIO 桶初始化失败，文件上传功能将不可用：{e}")
+    # 启动时逐个探测 MySQL / Redis / MinIO / Milvus / Neo4j 并打印健康汇总
+    await check_infra_health()
     yield
-    # 应用关闭时执行
-    # 关闭数据库连接池
-    await engine.dispose()
+    # 应用关闭时释放各组件连接
+    await engine.dispose()      # MySQL 连接池
+    close_milvus_client()       # Milvus 连接（同步 SDK）
+    await close_neo4j_driver()  # Neo4j 异步 Driver
     logger.info(f"{settings.APP_NAME} 关闭..")
 
 

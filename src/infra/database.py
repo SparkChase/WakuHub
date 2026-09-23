@@ -1,4 +1,5 @@
 from src.core.config import get_settings
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 settings = get_settings()
@@ -33,3 +34,10 @@ async def get_db() -> AsyncSession:
         except Exception as e:
             await session.rollback() # 出错后回滚事务
             raise e # 抛出异常，让FastAPI处理
+
+
+async def check_db_health() -> bool:
+    """检查 MySQL 连通性：执行一次 SELECT 1 验证连接池可用。"""
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
+    return True

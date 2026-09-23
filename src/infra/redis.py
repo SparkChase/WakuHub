@@ -26,6 +26,12 @@ async def get_redis_client() -> redis.Redis:
     return _redis_client
 
 
+async def check_redis_health() -> bool:
+    """检查 Redis 连通性：一次 ping 往返验证连接可用。"""
+    await _redis_client.ping()
+    return True
+
+
 # RedisSaver（checkpointer）专用连接池：必须 decode_responses=False（bytes 模式）
 # 与业务连接池共享相同的地址配置，但保持独立的连接池，互不干扰
 _checkpointer_pool = redis.ConnectionPool(

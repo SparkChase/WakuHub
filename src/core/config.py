@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     DEEPSEEK_API_KEY: str = ""
     CHAT_MODEL: str = "deepseek-chat"
     EMBEDDING_MODEL: str = "text-embedding-v3"
+       # 视觉语言模型（VL_API_KEY 为敏感配置，放 .env 覆盖）
+    VL_BASE_URL: str = ""
+    VL_API_KEY: str = ""
     VL_MODEL: str = "qwen-vl"
 
     LOG_LEVEL: str = "DEBUG"
