@@ -84,11 +84,11 @@ GET ?page=1&page_size=20&keyword=xxx
 | user | ✅ | 用户管理 |
 | role | ✅ | 角色管理 |
 | permission | ✅ | 权限管理 |
-| provider | 📝 | 模型供应商 |
-| model | 📝 | 模型管理 |
-| prompt | 📝 | Prompt 管理 |
-| knowledge | 📝 | 知识库管理（分段流水线 / 向量检索待接入 Milvus） |
-| tool | 📝 | 工具管理 |
-| agent | 📝 | Agent 管理 |
-| conversation | 📝 | 对话日志 |
-| analytics | 📝 | 数据统计 |
+| provider | ✅ | 模型供应商 |
+| model | ✅ | 模型管理 |
+| prompt | ✅ | Prompt 管理（模板 + 版本发布/回滚） |
+| knowledge | ✅ | 知识库管理（分段流水线 / 向量检索待接入 Milvus） |
+| tool | ✅ | 工具管理（真实执行逻辑 TODO，当前测试执行为占位） |
+| agent | ✅ | Agent 管理（生命周期 + 版本发布/回滚） |
+| conversation | 📝 | 对话日志（源项目无后端代码，待开发） |
+| analytics | 📝 | 数据统计（源项目无后端代码，待开发） |
