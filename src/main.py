@@ -22,6 +22,7 @@ from src.modules.knowledge.api import router as knowledge_router
 from src.modules.tool.api import router as tool_router
 from src.modules.agent.api import router as agent_router
 
+from src.api.routers.chat import router as chat_router
 # 使用上下文管理器感知项目的生命周期
 import inspect
 from contextlib import asynccontextmanager
@@ -115,6 +116,8 @@ def create_app() -> FastAPI:
     app.include_router(knowledge_router, prefix="/api")
     app.include_router(tool_router, prefix="/api")
     app.include_router(agent_router, prefix="/api")
+
+    app.include_router(chat_router,prefix="/api")
 
     return app
 

@@ -37,15 +37,11 @@ OPERATION_SYSTEM_PROMPT = """你是天宫医疗的运营数据助手。
 
 def create_operation_agent(db_session=None):
     llm = get_llm(temperature=0.2)
-    embedding_model = get_embedding_model()
-    neo4j_driver = get_neo4j_driver()
-    get_milvus_client_alias()
-    milvus_client = MilvusClient(uri=get_milvus_uri())
     deps = KnowledgeDeps(
         llm=llm,
-        embedding_model=embedding_model,
-        milvus_client=milvus_client,
-        neo4j_driver=neo4j_driver,
+        embedding_model=get_embedding_model(),
+        milvus_client=_get_milvus_client(),
+        neo4j_driver=get_neo4j_driver(),
         db_session=db_session,
     )
     knowledge_tools = build_knowledge_tools(deps)
@@ -59,10 +55,22 @@ def create_operation_agent(db_session=None):
     )
 
 
-_operation_agent = None
+# 重客户端（Milvus 连接）按进程复用
+_milvus_client: MilvusClient | None = None
 
-def get_operation_agent():
-    global _operation_agent
-    if _operation_agent is None:
-        _operation_agent = create_operation_agent()
-    return _operation_agent
+
+def _get_milvus_client() -> MilvusClient:
+    global _milvus_client
+    if _milvus_client is None:
+        get_milvus_client_alias()
+        _milvus_client = MilvusClient(uri=get_milvus_uri())
+    return _milvus_client
+
+
+def get_operation_agent(db_session=None):
+    """按请求构建运营 Agent。
+
+    其唯一工具 search_knowledge_sql 依赖 db_session，缓存单例会把
+    db_session=None 固化导致 SQL 永久不可用，故每次按传入会话重建。
+    """
+    return create_operation_agent(db_session=db_session)

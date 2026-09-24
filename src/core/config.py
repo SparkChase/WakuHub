@@ -1,5 +1,6 @@
 # 读取环境变量
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from functools import lru_cache
 
 class Settings(BaseSettings):
@@ -61,6 +62,19 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "DEBUG"
     LOG_DIR: str = "logs"
+
+    # minerU
+    MINERU_BACKEND: str = ""
+    MINERU_TIMEOUT: int = 60
+    MINERU_API_URL: str = ""
+
+    @field_validator("MINERU_TIMEOUT", mode="before")
+    @classmethod
+    def _default_mineru_timeout(cls, v):
+        # .env 里该项可能留空，空串按默认 60 秒处理，避免 int 解析失败
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return 60
+        return v
 
     # JWT（JWT_SECRET_KEY 为敏感配置，生产必须放 .env 覆盖）
     JWT_SECRET_KEY: str = "dev-secret-change-in-prod-please-use-32-bytes-min"

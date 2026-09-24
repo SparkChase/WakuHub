@@ -41,6 +41,7 @@ import src.modules.knowledge.model
 import src.modules.tool.model
 import src.modules.agent.model
 import src.modules.medical.model
+import src.agents.knowledge.model
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

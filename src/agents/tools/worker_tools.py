@@ -1,6 +1,7 @@
 # src/agents/worker_tools.py
 
 from langchain_core.tools import tool
+from loguru import logger
 from src.agents.workers.report_agent import get_report_agent
 from src.agents.workers.drug_agent import get_drug_agent
 from src.agents.workers.knowledge_agent import get_knowledge_agent
@@ -20,7 +21,7 @@ from src.agents.workers.operation_agent import get_operation_agent
 from src.agents.inquiry.graph import run_inquiry, InquiryDeps, build_inquiry_deps
 from src.agents.inquiry.state import InquiryPhase
 from src.agents.workers.inquiry_agent import handle_handoff
-from src.infra.redis_cache import get_checkpointer_redis
+from src.infra.redis import get_checkpointer_redis
 from src.core.config import get_settings
 settings = get_settings()
 @dataclass
@@ -84,7 +85,7 @@ async def call_report_agent(message: str) -> str:
     适用场景：患者上传了报告需要解读、询问报告中某项指标含义时。
     message: 报告内容描述或患者的具体问题。
     """
-    logging.info("日志：调用报告解读Agent")
+    logger.info("日志：调用报告解读Agent")
     agent = get_report_agent()
     result = await agent.ainvoke(
         {"messages": [{"role": "user", "content": message}]}
@@ -99,7 +100,7 @@ async def call_drug_agent(message: str) -> str:
     适用场景：询问用什么药、多种药物能否同服、处方是否安全时。
     message: 患者的用药问题或处方信息。
     """
-    logging.info("日志：调用药物Agent")
+    logger.info("日志：调用药物Agent")
     agent = get_drug_agent()
     result = await agent.ainvoke(
         {"messages": [{"role": "user", "content": message}]}
@@ -108,17 +109,20 @@ async def call_drug_agent(message: str) -> str:
 
 
 @tool
-async def call_knowledge_agent(message: str) -> str:
+async def call_knowledge_agent(message: str, runtime: ToolRuntime[UserContext]) -> str:
     """
     调用知识问答Agent，回答医学知识类问题。
     适用场景：询问疾病知识、治疗方案、医学术语解释、文献检索时。
     message: 患者或医生的医学知识问题。
     """
-    logging.info("日志：调用知识问答Agent")
-    agent = get_knowledge_agent()
-    result = await agent.ainvoke(
-        {"messages": [{"role": "user", "content": message}]}
-    )
+    logger.info("日志：调用知识问答Agent")
+    # 为本次调用开启独立 DB 会话，使 search_knowledge_sql 工具可用；按 user_id 构建以正确审计
+    from src.infra.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as session:
+        agent = get_knowledge_agent(db_session=session, user_id=runtime.context.user_id)
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": message}]}
+        )
     return result["messages"][-1].content
 
 
@@ -129,11 +133,14 @@ async def call_operation_agent(message: str) -> str:
     适用场景：运营人员询问就诊量、收入、科室排名等运营数据时。
     message: 运营人员的数据查询需求（自然语言）。
     """
-    logging.info("日志：调用运营数据Agent")
-    agent = get_operation_agent()
-    result = await agent.ainvoke(
-        {"messages": [{"role": "user", "content": message}]}
-    )
+    logger.info("日志：调用运营数据Agent")
+    # 运营 Agent 的唯一工具是 SQL 查询，必须注入 DB 会话
+    from src.infra.database import AsyncSessionLocal
+    async with AsyncSessionLocal() as session:
+        agent = get_operation_agent(db_session=session)
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": message}]}
+        )
     return result["messages"][-1].content
 
 

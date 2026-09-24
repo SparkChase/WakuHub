@@ -57,16 +57,11 @@ KNOWLEDGE_SYSTEM_PROMPT = """你是天宫医疗的知识问答助手，面向医
 
 
 def _build_deps(db_session=None, user_id="anonymous", role="patient") -> KnowledgeDeps:
-    llm = get_llm(temperature=0.3)
-    embedding_model = get_embedding_model()
-    neo4j_driver = get_neo4j_driver()
-    get_milvus_client_alias()
-    milvus_client = MilvusClient(uri=get_milvus_uri())
     return KnowledgeDeps(
-        llm=llm,
-        embedding_model=embedding_model,
-        milvus_client=milvus_client,
-        neo4j_driver=neo4j_driver,
+        llm=get_llm(temperature=0.3),
+        embedding_model=get_embedding_model(),
+        milvus_client=_get_milvus_client(),
+        neo4j_driver=get_neo4j_driver(),
         db_session=db_session,
         user_id=user_id,
         role=role,
@@ -85,10 +80,32 @@ def create_knowledge_agent(db_session=None, user_id="anonymous", role="patient")
     )
 
 
-_knowledge_agent = None
+# 重客户端（Milvus 连接）按进程复用，避免每次调用新建 gRPC 连接
+_milvus_client: MilvusClient | None = None
 
-def get_knowledge_agent():
-    global _knowledge_agent
-    if _knowledge_agent is None:
-        _knowledge_agent = create_knowledge_agent()
-    return _knowledge_agent
+
+def _get_milvus_client() -> MilvusClient:
+    global _milvus_client
+    if _milvus_client is None:
+        get_milvus_client_alias()
+        _milvus_client = MilvusClient(uri=get_milvus_uri())
+    return _milvus_client
+
+
+def get_knowledge_agent(db_session=None, user_id="anonymous", role="patient"):
+    """按请求构建知识 Agent。
+
+    Agent 本身无状态（无 checkpointer/store），按 user_id/role/db_session
+    重新构建以保证审计日志与权限正确；底层重客户端在工厂内复用。
+    """
+    return create_knowledge_agent(db_session=db_session, user_id=user_id, role=role)
+
+
+
+# 工具选择策略  -> search_knowledge_docs
+# 简单文档查询
+# 实体关系查询
+# 统计数据查询
+# 涉及 “合并症+用药” “禁忌+推荐”等复杂问题
+# 。。。。
+# 不确定用。。。。。。

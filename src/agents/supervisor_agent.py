@@ -109,6 +109,6 @@ async def chat_endpoint(user_id: str, session_id: str, message: str):
     result = await agent.ainvoke(
         {"messages": [{"role": "user", "content": message}]},
         config=config,
-        context=UserContext
+        context=UserContext(user_id=user_id, session_id=session_id),
     )
     return result["messages"][-1].content
