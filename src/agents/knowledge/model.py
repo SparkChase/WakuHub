@@ -1,4 +1,4 @@
-from sqlalchemy import String, SmallInteger, Boolean, Index
+from sqlalchemy import String, SmallInteger, Integer, Boolean, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from src.core.base_model import BaseModel
 
@@ -34,4 +34,23 @@ class KnowledgeNotification(BaseModel):
     __table_args__ = (
         Index("ix_knowledge_notifications_category", "category"),
         Index("ix_knowledge_notifications_is_read", "is_read"),
+    )
+
+
+class KnowledgeQueryLog(BaseModel):
+    """知识检索查询审计日志：记录每次检索的用户、意图、通道、耗时与幻觉检测结果。"""
+    __tablename__ = "knowledge_query_logs"
+
+    user_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="用户 ID")
+    role: Mapped[str] = mapped_column(String(32), default="patient", comment="用户角色")
+    question: Mapped[str] = mapped_column(String(1000), nullable=False, comment="用户提问")
+    intent: Mapped[str] = mapped_column(String(50), default="", comment="检索意图")
+    channels: Mapped[str] = mapped_column(String(100), default="", comment="使用的检索通道")
+    answer_preview: Mapped[str] = mapped_column(String(500), default="", comment="回答预览")
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0, comment="检索耗时(ms)")
+    is_grounded: Mapped[bool | None] = mapped_column(Boolean, nullable=True, comment="幻觉检测是否有据")
+
+    __table_args__ = (
+        Index("ix_knowledge_query_logs_user", "user_id"),
+        Index("ix_knowledge_query_logs_intent", "intent"),
     )

@@ -14,7 +14,7 @@ from src.agents.inquiry.graph import run_inquiry, build_inquiry_deps
 from src.agents.inquiry.state import InquiryState, InquiryPhase
 from src.agents.workers.inquiry_agent import handle_handoff
 
-router = APIRouter(prefix="/api/v1/chat",tags=["chat"])
+router = APIRouter(prefix="/chat",tags=["chat"])
 
 class ChatRequest(BaseModel):
     user_id: str

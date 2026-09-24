@@ -61,7 +61,7 @@ def build_knowledge_tools(deps: KnowledgeDeps) -> list:
                 doc_type=doc_type or None,
                 role=deps.role,
             )
-        QueryAuditLog.log(
+        await QueryAuditLog.log(
             deps.user_id,
             deps.role,
             question,
@@ -87,7 +87,7 @@ def build_knowledge_tools(deps: KnowledgeDeps) -> list:
                 llm=deps.llm,
                 role=deps.role,
             )
-        QueryAuditLog.log(
+        await QueryAuditLog.log(
             deps.user_id,
             deps.role,
             question,
@@ -113,7 +113,7 @@ def build_knowledge_tools(deps: KnowledgeDeps) -> list:
                 llm=deps.llm,
                 db=deps.db_session,
             )
-        QueryAuditLog.log(
+        await QueryAuditLog.log(
             deps.user_id,
             deps.role,
             question,
@@ -143,7 +143,7 @@ def build_knowledge_tools(deps: KnowledgeDeps) -> list:
                 db_session=deps.db_session,
                 role=deps.role,
             )
-        QueryAuditLog.log(
+        await QueryAuditLog.log(
             deps.user_id,
             deps.role,
             question,
@@ -169,7 +169,7 @@ def build_knowledge_tools(deps: KnowledgeDeps) -> list:
                 milvus_client=deps.milvus_client,
                 neo4j_driver=deps.neo4j_driver,
             )
-        QueryAuditLog.log(
+        await QueryAuditLog.log(
             deps.user_id,
             deps.role,
             question,
