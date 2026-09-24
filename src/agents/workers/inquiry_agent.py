@@ -1,11 +1,10 @@
+import uuid
+
 from langchain.agents import create_agent
-from langchain_deepseek import ChatDeepSeek
 from pydantic import BaseModel
 from pydantic import Field
-from src.core.config import get_settings
+from src.core.llm import get_llm
 from src.agents.inquiry.state import InquiryHandoffPayload
-
-settings = get_settings()
 
 INQUIRY_WORKER_PROMPT = """你是天宫医疗的挂号助手。
 
@@ -20,14 +19,6 @@ INQUIRY_WORKER_PROMPT = """你是天宫医疗的挂号助手。
 3. 完成预约挂号（调用挂号工具，待接入）
 
 请用温和、专业的语气与患者沟通。"""
-
-
-def get_llm():
-    return ChatDeepSeek(
-        model=settings.CHAT_MODEL,
-        api_key=settings.DEEPSEEK_API_KEY,
-        temperature=0.3,
-    )
 
 
 def create_inquiry_worker_agent():
@@ -64,11 +55,8 @@ async def mock_create_appointment(payload: InquiryHandoffPayload) -> Appointment
     用 LLM 结构化输出生成一条模拟预约数据。
     输入问诊结论，输出符合场景的预约信息，无需维护任何模拟数据库。
     """
-    llm = ChatDeepSeek(
-        model=settings.CHAT_MODEL,
-        api_key=settings.DEEPSEEK_API_KEY,
-        temperature=0.7,  # 适当随机，让每次生成的医生/时间略有不同
-    )
+    # 温度调高一点，让每次生成的医生/时间略有不同
+    llm = get_llm(temperature=0.7)
     structured_llm = llm.with_structured_output(AppointmentResult)
 
     prompt = f"""根据以下问诊结论，生成一条合理的挂号预约信息。

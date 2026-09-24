@@ -1,17 +1,15 @@
 # src/agents/workers/operation_agent.py
 
 from langchain.agents import create_agent
-from langchain_deepseek import ChatDeepSeek
 from pymilvus import MilvusClient
 
 from src.infra.embedding import get_embedding_model
 
-from src.core.config import get_settings
+from src.core.llm import get_llm
 from src.infra.neo4j_client import get_neo4j_driver
 from src.infra.milvus_client import get_milvus_client_alias, get_milvus_uri
 from src.agents.knowledge.tools import KnowledgeDeps, build_knowledge_tools
 
-settings = get_settings()
 
 OPERATION_SYSTEM_PROMPT = """你是天宫医疗的运营数据助手。
 
@@ -38,11 +36,7 @@ OPERATION_SYSTEM_PROMPT = """你是天宫医疗的运营数据助手。
 
 
 def create_operation_agent(db_session=None):
-    llm = ChatDeepSeek(
-        model=settings.CHAT_MODEL,
-        api_key=settings.DEEPSEEK_API_KEY,
-        temperature=0.2,
-    )
+    llm = get_llm(temperature=0.2)
     embedding_model = get_embedding_model()
     neo4j_driver = get_neo4j_driver()
     get_milvus_client_alias()

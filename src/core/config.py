@@ -45,9 +45,10 @@ class Settings(BaseSettings):
     NEO4J_PASSWORD: str = "medical123"
 
     # 模型
-       # 聊天模型
-    BASE_URL_CHAT: str = ""
-    DEEPSEEK_API_KEY: str = ""
+       # 聊天模型：走 OpenAI 兼容接口，provider 由 CHAT_BASE_URL / CHAT_MODEL 决定
+       # （CHAT_API_KEY 为敏感配置，放 .env 覆盖；keyless 代理填任意非空串即可）
+    CHAT_BASE_URL: str = ""
+    CHAT_API_KEY: str = ""
     CHAT_MODEL: str = ""
        # Embedding：统一走 Gitee AI 的 OpenAI 兼容接口（EMBEDDING_API_KEY 为敏感配置，放 .env 覆盖）
     EMBEDDING_BASE_URL: str = "https://ai.gitee.com/v1"

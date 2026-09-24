@@ -1,14 +1,13 @@
 from langchain.agents.middleware import SummarizationMiddleware
 from langgraph.checkpoint.redis import AsyncRedisSaver
 from langchain.agents import create_agent
-from langchain_deepseek.chat_models import ChatDeepSeek
-from pywin.framework.toolmenu import tools
-
-from src.agents.store_tools import save_memory, search_memory
-from src.agents.worker_tools import WORKER_TOOLS
+from src.core.llm import get_llm
+from src.agents.tools.worker_tools import UserContext
+from src.agents.tools.store_tools import save_memory, search_memory
+from src.agents.tools.worker_tools import WORKER_TOOLS
 from src.infra.milvus_client import get_milvus_client_alias
 from src.infra.milvus_store import MilvusStore
-from src.infra.redis_cache import get_checkpointer_redis
+from src.infra.redis import get_checkpointer_redis
 from src.infra.embedding import get_embedding_model, probe_embedding_dim
 from dotenv import load_dotenv
 load_dotenv()
@@ -66,12 +65,13 @@ async def create_supervisor_agent():
     - 对话语气温和、专业、易懂"""
     # 4. 创建 Agent
     agent = create_agent(
-        model="deepseek-chat",
+        model=get_llm(),
         tools=tools,
         system_prompt=SUPERVISOR_SYSTEM_PROMPT,
+        context_schema=UserContext,
         middleware=[
             SummarizationMiddleware( # 会话总结压缩
-                model="deepseek-chat",
+                model=get_llm(),
                 trigger=[
                     ("tokens", 4000),  # token数达到4k时触发
                     ("messages", 6),  # 或消息数达到 4条时触发
@@ -109,5 +109,6 @@ async def chat_endpoint(user_id: str, session_id: str, message: str):
     result = await agent.ainvoke(
         {"messages": [{"role": "user", "content": message}]},
         config=config,
+        context=UserContext
     )
     return result["messages"][-1].content

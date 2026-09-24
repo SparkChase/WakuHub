@@ -1,6 +1,6 @@
 from langchain.agents import create_agent
 from langchain_core.tools import tool
-from src.core.config import get_llm
+from src.core.llm import get_llm
 
 """
 报告解读 Agent
