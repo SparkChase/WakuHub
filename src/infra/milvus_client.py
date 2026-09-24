@@ -23,6 +23,14 @@ def get_milvus_client_alias() -> str:
     return MILVUS_ALIAS
 
 
+def get_milvus_uri() -> str:
+    """返回 MilvusClient 用的 uri。MILVUS_HOST 可能带或不带协议头，统一规范化后再拼端口。"""
+    host = settings.MILVUS_HOST
+    if "://" not in host:
+        host = f"http://{host}"
+    return f"{host}:{settings.MILVUS_PORT}"
+
+
 def get_milvus_dependency() -> str:
     """
     FastAPI Depends 注入用。

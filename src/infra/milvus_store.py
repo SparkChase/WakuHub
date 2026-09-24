@@ -21,7 +21,15 @@ COLLECTION_NAME = "agent_long_term_memory"
 def _ensure_collection(alias: str, dims: int) -> Collection:
     """确保 Milvus Collection 存在，不存在则创建。alias 为 Milvus 数据库名。默认是 default。"""
     if utility.has_collection(COLLECTION_NAME, using=alias):
-        return Collection(COLLECTION_NAME, using=alias)
+        col = Collection(COLLECTION_NAME, using=alias)
+        # 校验已存在 collection 的维度与当前模型一致，不符直接报错（避免 insert 时维度炸掉）
+        existing_dim = next(f.params["dim"] for f in col.schema.fields if f.name == "embedding")
+        if existing_dim != dims:
+            raise RuntimeError(
+                f"长期记忆 collection '{COLLECTION_NAME}' 维度为 {existing_dim}，与当前模型输出 {dims} 不符；"
+                f"请 drop 该 collection 后重建。"
+            )
+        return col
 
     fields = [
         FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=512, is_primary=True),

@@ -5,10 +5,10 @@ aput/aget/asearch），让你能：
   1. 确认「跨会话的记忆真的写进了 Milvus，并能按 namespace 精确取回 / 语义检索」
   2. 亲眼看到 MilvusStore 懒建的 collection（agent_long_term_memory）里到底存了什么行
 
-为什么用 fake embedding 而不是真实 DashScope：
+为什么用 fake embedding 而不是真实 embedding 服务：
   长期记忆的本质是「把 value 向量化后存进 Milvus、按 id 取回、按向量相似度检索」，
   这跟 embedding 模型好不好无关。DeterministicFakeEmbedding 对相同文本恒定产出相同
-  向量（COSINE=1.0），测试才能确定性、不依赖网络和 DASHSCOPE_API_KEY，而 Milvus 里
+  向量（COSINE=1.0），测试才能确定性、不依赖网络和 embedding API 费用，而 Milvus 里
   存下来的行结构与真实 embedding 运行时**完全一致**（只有向量数值是假的）。
 
 注意：连的是项目真实 Milvus（core/config 里的 MILVUS_HOST），collection 由
@@ -26,7 +26,7 @@ from pymilvus import utility
 from src.infra.milvus_client import get_milvus_client_alias
 from src.infra.milvus_store import MilvusStore, COLLECTION_NAME
 
-DIMS = 1024  # 与 supervisor_agent.py 里 DashScope text-embedding-v3 的维度一致
+DIMS = 1024  # 与 supervisor_agent.py 统一 embedding（moark Qwen3-Embedding，1024 维）一致
 
 
 @pytest.fixture

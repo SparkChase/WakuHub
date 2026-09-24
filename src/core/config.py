@@ -45,16 +45,18 @@ class Settings(BaseSettings):
     NEO4J_PASSWORD: str = "medical123"
 
     # 模型
-    DASHSCOPE_API_KEY: str = ""
        # 聊天模型
     BASE_URL_CHAT: str = ""
     DEEPSEEK_API_KEY: str = ""
-    CHAT_MODEL: str = "deepseek-chat"
-    EMBEDDING_MODEL: str = "text-embedding-v3"
+    CHAT_MODEL: str = ""
+       # Embedding：统一走 Gitee AI 的 OpenAI 兼容接口（EMBEDDING_API_KEY 为敏感配置，放 .env 覆盖）
+    EMBEDDING_BASE_URL: str = "https://ai.gitee.com/v1"
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_MODEL: str = ""
        # 视觉语言模型（VL_API_KEY 为敏感配置，放 .env 覆盖）
     VL_BASE_URL: str = ""
     VL_API_KEY: str = ""
-    VL_MODEL: str = "qwen-vl"
+    VL_MODEL: str = ""
 
     LOG_LEVEL: str = "DEBUG"
     LOG_DIR: str = "logs"
