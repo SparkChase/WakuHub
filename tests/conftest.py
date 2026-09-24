@@ -14,10 +14,20 @@ from src.core.config import get_settings
 from src.core.base_model import Base
 from src.infra.database import get_db
 from src.infra.redis import get_redis_client
-from src.main import create_app
 
-# 导入所有 ORM 模型，保证 Base.metadata 里注册了对应的表
-import src.modules.user.model  # noqa: F401
+# 导入所有 ORM 模型，保证 Base.metadata 注册了全部表（与 alembic/env.py 对齐）。
+# 只导入 user.model 时，跨模块外键（如 role_permissions→permissions）无法解析，
+# 单独跑某个模块的测试会因建表阶段外键找不到目标表而报错。
+import src.modules.user.model        # noqa: F401
+import src.modules.permission.model  # noqa: F401
+import src.modules.role.model        # noqa: F401
+import src.modules.provider.model    # noqa: F401
+import src.modules.model.model       # noqa: F401
+import src.modules.prompt.model      # noqa: F401
+import src.modules.knowledge.model   # noqa: F401
+import src.modules.tool.model        # noqa: F401
+import src.modules.agent.model       # noqa: F401
+import src.modules.medical.model     # noqa: F401
 
 _settings = get_settings()
 
@@ -85,6 +95,10 @@ async def redis_client():
 @pytest_asyncio.fixture(loop_scope="session")
 async def client(db_session, redis_client):
     """HTTP 测试客户端：用 ASGI 直连应用，把 get_db / get_redis 依赖替换成测试实例。"""
+    # 延迟导入：create_app 会拉起 supervisor/worker/api 整条链路，
+    # 只有真正用到 client 的测试才需要它，避免拖累不依赖 HTTP 的单元/集成测试。
+    from src.main import create_app
+
     app = create_app()
 
     async def _override_get_db():
